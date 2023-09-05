@@ -11,7 +11,7 @@ function Home() {
 
   useEffect(() => {
 
-    fetch('http://localhost:5062/api/Category/parent/0')
+    fetch('http://localhost:8080/api/Category/getCatNameByParentId/0')
       .then(response => response.json())
       .then(data => {
         setMaincategories(data)

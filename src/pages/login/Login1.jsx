@@ -34,10 +34,14 @@ const Login1 = () => {
           onSubmit={async (values, { setSubmitting }) => {
             try {
 
-              const res = await axios.post("http://localhost:5062/api/Customer/check", values);
+              const res = await axios.post("http://localhost:8080/api/Customer/check", values);
               console.log(res);
               localStorage.setItem("islogin",true);
-              localStorage.setItem("custId",res.data)
+              localStorage.setItem("custId",res.data);
+
+              
+
+
               navigate('/');
               
             } catch (err) {

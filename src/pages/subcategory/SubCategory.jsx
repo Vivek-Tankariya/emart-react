@@ -20,7 +20,7 @@ const SubCategory = () => {
   }
 
   useEffect(() => {
-    fetch('http://localhost:5062/api/Category/parent/' + id)
+    fetch('http://localhost:8080/api/Category/getCatNameByParentId/' + id)
       .then(response => response.json())
       .then(data => {
         setSubcategories(data);

@@ -25,6 +25,8 @@
     margin-top: 10px;
     display: flex;
     justify-content: space-between;
+    display: flex;
+    flex-direction: column;
   }
   
   .product-offer-price {

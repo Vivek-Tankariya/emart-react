@@ -9,13 +9,9 @@ const ProductPage = () => {
     const { id } = useParams();
     let navigate = useNavigate();
 
-    const handleClick = (prodID) => {
-      
-      
-    };
 
     useEffect(() => {
-        fetch('http://localhost:5062/api/Product/ByCategory/' + id)
+        fetch('http://localhost:8080/api/product/getCatId/' + id)
           .then(response => response.json())
           .then(data => {
             setProduct(data);
@@ -27,8 +23,8 @@ const ProductPage = () => {
   return (
     <div style={{ margin: '20px', display: 'flex', padding: '2%' }}>
         {product?.map((i) => (
-          <div key={i.prodID} onClick={() => handleClick(i.prodID)}  style={{ padding: '10px' }}>
-            <ProductCard id={i.prodID} prodName={i.prodName} imgPath={i.imgPath} prodShortDesc={i.prodShortDesc} offerPrice={i.offerPrice} mrpPrice={i.mrpPrice} prodLongDesc={i.prodLongDesc} />
+          <div key={i.prodID}   style={{ padding: '10px' }}>
+            <ProductCard id={i.prodID} prodDisc = {i.disc} prodPoints={i.pointsRedeem} prodName={i.prodName} imgpath={i.imgpath} prodShortDesc={i.prodShortDesc} offerPrice={i.offerPrice} mrpPrice={i.mrpPrice} prodLongDesc={i.prodLongDesc} />
           </div>
            ))}
     </div>

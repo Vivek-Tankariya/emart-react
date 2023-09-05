@@ -9,8 +9,31 @@ const CartPage1 = () => {
   const [points, setPoints] = useState(0);
   const [isRedeemingPoints, setIsRedeemingPoints] = useState(false);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [totalAmount,setTotalAmount] = useState(0);
 
   const navigate = useNavigate();
+console.log('carditems', cartItems)
+console.log('prod details', productDetails)
+const fetchCartItemsFun = async () => {
+  const res = await fetch(`http://localhost:8080/api/Cart/cust/` + localStorage.getItem("custId"))
+      .then((response) => response.json())
+      .then((data) => {
+        return data;
+        setCartItems(data);
+      
+        //calculateTotalAmount(data);
+        
+      })
+      .catch((error) => {
+        console.error("Error fetching cart items:", error);
+      });
+      setCartItems(res)
+      console.log('cart items', res);
+      //calculateTotalAmount(res)
+      const productIDs = [...new Set(res.map(item => item.prodID))];
+        await fetchProductDetails(productIDs);
+        calculateTotalAmount(res)
+} 
 
   useEffect(() => {
     if (localStorage.getItem("islogin") !== "true") {
@@ -19,18 +42,9 @@ const CartPage1 = () => {
     }
 
     // Fetch cart items
-    fetch(`http://localhost:5062/api/Cart/cust/` + localStorage.getItem("custId"))
-      .then((response) => response.json())
-      .then((data) => {
-        setCartItems(data);
-        const productIDs = [...new Set(data.map(item => item.prodID))];
-        fetchProductDetails(productIDs);
-      })
-      .catch((error) => {
-        console.error("Error fetching cart items:", error);
-      });
+    fetchCartItemsFun();
 
-    fetch('http://localhost:5062/api/Customer/isCardHolder/' + localStorage.getItem("custId"))
+    fetch('http://localhost:8080/api/Customer/isCardHolder/' + localStorage.getItem("custId"))
       .then((res) => res.json())
       .then((data) => {
         setIsCardHolder(data);
@@ -41,12 +55,11 @@ const CartPage1 = () => {
 
   }, []);
 
+  
   useEffect(() => {
-    
-    
 
     if (isCardHolder) {
-      fetch('http://localhost:5062/api/Customer/points/' + localStorage.getItem("custId"))
+      fetch('http://localhost:8080/api/Customer/points/' + localStorage.getItem("custId"))
         .then((res) => res.json())
         .then((data) => {
           setPoints(data);
@@ -61,12 +74,12 @@ const CartPage1 = () => {
     }
   }, [cartItems, isCardHolder]);
 
-  const fetchProductDetails = (productIDs) => {
-    
-    const productDetailsFetchPromises = productIDs.map(id => (
-      fetch(`http://localhost:5062/api/Product/${id}`)
+  const fetchProductDetails = async (productIDs) => {
+    console.log('prodID',productIDs);
+    const productDetailsFetchPromises =await productIDs.map(id => (
+      fetch(`http://localhost:8080/api/product/${id}`)
         .then(response => response.json())
-        .then(data => ({ id, details: data }))
+        .then(data => ({ id, details: data })) 
     ));
 
     Promise.all(productDetailsFetchPromises)
@@ -102,14 +115,15 @@ const handleDecrement = (index) => {
   }
 };
 
-const updateCartItemQuantity = (cartItemId, newQuantity) => {
+const updateCartItemQuantity = async(cartItemId, newQuantity) => {
   // Make an API call to update the quantity in the database
-  fetch(`http://localhost:5062/api/Cart/${newQuantity}/${cartItemId}`, {
+  await fetch(`http://localhost:8080/api/Cart/${newQuantity}/${cartItemId}`, {
     method: 'PUT'
   })
     .then((response) => response.json())
     .then((data) => {
       console.log('Quantity updated successfully:', data);
+      fetchCartItemsFun()
     })
     .catch((error) => {
       console.error('Error updating quantity:', error);
@@ -118,21 +132,27 @@ const updateCartItemQuantity = (cartItemId, newQuantity) => {
 
 
   const calculateTotalAmount = (items) => {
-    let totalAmount = 0;
+    console.log(items);
+
+    let totalAmt = 0;
     items.forEach(item => {
       const product = productDetails[item.prodID];
       if (product) {
-        totalAmount += isCardHolder ? (product.cardHolderPrice || product.offerPrice) * item.qty : product.offerPrice === 0 ? product.mrpPrice * item.qty : product.offerPrice * item.qty;
+        totalAmt += isCardHolder ? (product.cardHolderPrice || product.offerPrice) * item.qty : product.offerPrice === 0 ? product.mrpPrice * item.qty : product.offerPrice * item.qty;
+        
+        //totalAmt += product.cardHolderPrice;
+        console.log(totalAmt+"--------------")
       }
     });
-    return totalAmount;
+    return setTotalAmount(totalAmt);
+    
   };
 
   const handleRemove = (cartItemId) => {
 
     setCartItems(cartItems.filter(item => item.cartID !== cartItemId));
     // Make an API call to remove the item from the cart
-    fetch(`http://localhost:5062/api/Cart/${cartItemId}`, {
+    fetch(`http://localhost:8080/api/Cart/${cartItemId}`, {
       method: 'DELETE'
     })
   };
@@ -156,7 +176,7 @@ const updateCartItemQuantity = (cartItemId, newQuantity) => {
     };
   
     // Make a POST request to create the invoice
-    fetch('http://localhost:5062/api/Invoice', {
+    fetch('http://localhost:8080/api/invoice', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -180,7 +200,7 @@ const updateCartItemQuantity = (cartItemId, newQuantity) => {
           };
   
           // Make a POST request to create invoice details
-          fetch('http://localhost:5062/api/InvoiceDetails', {
+          fetch('http://localhost:8080/api/Invoicedetaails', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -213,43 +233,80 @@ const updateCartItemQuantity = (cartItemId, newQuantity) => {
 
   };
   
-
   
 
-  const totalAmount = calculateTotalAmount(cartItems);
+  const handlecheck = (e,prodid,prodPoint, discPer) => {        
+    
+    const finalPrice =   productDetails[prodid]?.cardHolderPrice
+    
+    if(e.target.checked){
+      if(points >= prodPoint) {
+        if(discPer!=0) {
+          setTotalAmount(totalAmount - (finalPrice*discPer)/100)
+        } else {
+          setTotalAmount( totalAmount -  finalPrice)
+        }
+        setPoints(points - prodPoint);
+      } else {
+        window.alert("You dont have enough points")
+        e.target.checked =false
+      }
+    }else 
+    {
+      setPoints(points + prodPoint);
+      if(discPer!=0) {
+        setTotalAmount(totalAmount + (finalPrice*discPer)/100)
+      } else {
+        setTotalAmount(totalAmount + finalPrice)
+      }
+      
+    }
+  } 
+  
+  useEffect (() => { 
+    if(productDetails){
+      
+  calculateTotalAmount(cartItems)
+    }
+  },[productDetails])
+
+  // const totalAmount2 = calculateTotalAmount(cartItems);
+
+  // useEffect (()=> {
+  //   setTotalAmount(totalAmount2);
+  // },[totalAmount2])
+
+  const trial = (item,index) => {
+      return <li key={item.cartID}>
+      <div>
+        <div>Product ID: {item.prodID}</div>
+        <div>Product Name: {productDetails[item.prodID]?.prodName}</div>
+        {(isCardHolder) ? (<div>Card Holder Price : ₹{productDetails[item.prodID]?.cardHolderPrice.toLocaleString()}</div>) : (productDetails[item.prodID]?.offerPrice.toLocaleString()) === 0 ? (<div>MRP: {productDetails[item.prodID]?.mrpPrice.toLocaleString()}</div>) : (<div>Offer Price: {productDetails[item.prodID]?.offerPrice.toLocaleString()}</div>)}
+        {(isCardHolder) ? (productDetails[item.prodID]?.pointsRedeem!=0) ? (<div>Points to Redeem : {productDetails[item.prodID]?.pointsRedeem}</div>) : "" : ""}
+        {(isCardHolder) ? (productDetails[item.prodID]?.pointsRedeem!=0) ? (productDetails[item.prodID]?.disc)==0 ? "100% Discount" : productDetails[item.prodID]?.disc+"% Discount" : "" : ""}
+        <div>Quantity in Cart: {item.qty}</div>
+        <div>
+          <button onClick={() => handleIncrement(index)}>+</button>
+          <button onClick={() => handleDecrement(index)}>-</button>
+          <button className="remove-button" onClick={() => handleRemove(item.cartID)}>Remove</button>
+          
+          <input type="checkbox" disabled={productDetails[item.prodID]?.pointsRedeem === 0} onChange={(e) => handlecheck(e, item.prodID ,productDetails[item.prodID]?.pointsRedeem, productDetails[item.prodID]?.disc )} /> 
+        </div>
+      </div>
+    </li>
+  }
 
   return (
     <div className="cart-page">
-      <h2>Your Cart</h2>
+      <h2>Your Cart {points}</h2>
       <ul className="cart-items">
-        {cartItems.map((item, index) => (
-          <li key={item.cartID}>
-            <div>
-              <div>Product ID: {item.prodID}</div>
-              <div>Product Name: {productDetails[item.prodID]?.prodName}</div>
-              {(isCardHolder) ? (<div>Card Holder Price : ₹{productDetails[item.prodID]?.cardHolderPrice.toLocaleString()}</div>) : (productDetails[item.prodID]?.offerPrice.toLocaleString()) === 0 ? (<div>MRP: {productDetails[item.prodID]?.mrpPrice.toLocaleString()}</div>) : (<div>Offer Price: {productDetails[item.prodID]?.offerPrice.toLocaleString()}</div>)}
-              {(isCardHolder) ? (<div>Points to Redeem : {productDetails[item.prodID]?.pointsRedeem}</div>) : ""}
-              <div>Quantity in Cart: {item.qty}</div>
-              <div>
-                <button onClick={() => handleIncrement(index)}>+</button>
-                <button onClick={() => handleDecrement(index)}>-</button>
-                <button className="remove-button" onClick={() => handleRemove(item.cartID)}>Remove</button>
-              </div>
-            </div>
-          </li>
-        ))}
+        {cartItems.map((item, index) => trial(item,index))}
       </ul>
-      <div>
-        {(isCardHolder) ? (<input type="checkbox" checked={isRedeemingPoints} onChange={() => setIsRedeemingPoints(!isRedeemingPoints)}/> ) : ""}
-    
-            {(isCardHolder) ? ('Redeem Points') : ""} </div>
-
+      
       <div>
   <p>
     Total Cart Amount: ₹
-    {isRedeemingPoints
-      ? (totalAmount - points).toLocaleString()
-      : totalAmount.toLocaleString()}
+    {totalAmount && totalAmount}
   </p>
 </div>
       

@@ -28,12 +28,12 @@ const TaxInvoice = () => {
 
   useEffect(() => {
     // Fetch invoice data from the API using invoiceID
-    fetch(`http://localhost:5062/api/Invoice/${invoiceID}`)
+    fetch(`http://localhost:8080/api/invoice/${invoiceID}`)
       .then((response) => response.json())
       .then((data) => {
         setInvoiceData(data);
         // Fetch customer details using custID from invoiceData
-        fetch(`http://localhost:5062/api/Customer/${data.custID}`)
+        fetch(`http://localhost:8080/api/Customer/${data.custID}`)
           .then((response) => response.json())
           .then((customer) => {
             setCustomerData(customer);
@@ -43,7 +43,7 @@ const TaxInvoice = () => {
           });
 
         // Fetch product details using invoiceID
-        fetch(`http://localhost:5062/api/InvoiceDetails/InvoiceID/${invoiceID}/Details`)
+        fetch(`http://localhost:8080/api/Invoicedetaails/InvoiceID/${invoiceID}`)
           .then((response) => response.json())
           .then((products) => {
             setProductDetails(products);
@@ -55,6 +55,11 @@ const TaxInvoice = () => {
       .catch((error) => {
         console.error('Error fetching invoice data:', error);
       });
+
+      
+
+
+
   }, [invoiceID]);
 
   if (!invoiceData || !customerData || productDetails.length === 0) {
@@ -75,7 +80,7 @@ const TaxInvoice = () => {
     } )
 
     const custId = parseInt(localStorage.getItem("custId"));
-      fetch(`http://localhost:5062/api/Cart/Deletecust/${custId}`, {
+      fetch(`http://localhost:8080/api/Cart/Deletecust/${custId}`, {
         method: 'DELETE',
       })
         .then(() => {

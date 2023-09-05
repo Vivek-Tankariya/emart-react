@@ -5,8 +5,10 @@ import { useNavigate } from 'react-router-dom';
 
 const ProductCard = ({
   id,
-  imgPath,
+  imgpath,
   prodName,
+  prodDisc,
+  prodPoints,
   prodLongDesc,
   prodShortDesc,
   offerPrice,
@@ -22,21 +24,22 @@ const ProductCard = ({
   const [showLongDesc, setShowLongDesc] = useState(false);
 
   const handleAddToCart = (id) => {
-    if (localStorage.getItem("islogin") === "false") {
-      navigate('/login');
+    if (localStorage.getItem("islogin") === "true") {
+      setCart({
+        prodID: id,
+        custID: localStorage.getItem("custId"),
+        qty: 1
+      });
+      
       return;
     }
 
-    setCart({
-      prodID: id,
-      custID: localStorage.getItem("custId"),
-      qty: 1
-    });
+    navigate('/login');
   };
 
   useEffect(() => {
     if (cart.prodID && cart.custID) {
-      fetch("http://localhost:5062/api/Cart", {
+      fetch("http://localhost:8080/api/Cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cart)
@@ -59,7 +62,7 @@ const ProductCard = ({
 
   return (
     <div className="product-card">
-      <img src={imgPath} alt={prodName} className="product-image" />
+      <img src={imgpath} alt={prodName} className="product-image" />
       <h3 className="product-name">{prodName}</h3>
       {showLongDesc ? (
         <p className="product-long-desc">{prodLongDesc}</p>
@@ -67,8 +70,11 @@ const ProductCard = ({
         <p className="product-short-desc">{prodShortDesc}</p>
       )}
       <div className="product-prices">
+        <span className="product-mrp-price">MRP - ₹{mrpPrice}</span>
         <span className="product-offer-price">₹{offerPrice}</span>
-        <span className="product-mrp-price">₹{mrpPrice}</span>
+        {prodPoints != 0 ? (<span className='product-offer-price'>Points - {prodPoints}</span>) : ""}
+        {prodPoints != 0 ? (<span className='product-offer-price'>Discount - {prodDisc==0 ? "100%" : prodDisc+"%"}</span>) : ""}
+        
       </div>
       {prodLongDesc && (
         <p className="show-more" onClick={toggleLongDesc}>
@@ -87,7 +93,7 @@ const ProductCard = ({
 
 ProductCard.propTypes = {
   id: PropTypes.string.isRequired,
-  imgPath: PropTypes.string.isRequired,
+  imgpath: PropTypes.string.isRequired,
   prodName: PropTypes.string.isRequired,
   prodLongDesc: PropTypes.string.isRequired,
   prodShortDesc: PropTypes.string.isRequired,
